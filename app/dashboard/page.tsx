@@ -6,6 +6,7 @@ import { getCurrentUser, signOut } from "@/lib/auth";
 import GeneratePoseModal from "@/components/GeneratePoseModal";
 import AddCharacterModal from "@/components/AddCharacterModal";
 import EditCharacterModal from "@/components/EditCharacterModal";
+import PoseDetailModal from "@/components/PoseDetailModal";
 import {
   Sparkles,
   Download,
@@ -13,6 +14,7 @@ import {
   LogOut,
   UserPlus,
   Pencil,
+  Search,
 } from "lucide-react";
 import type { Character, Pose } from "@/types";
 
@@ -26,6 +28,9 @@ export default function Dashboard() {
   const [showAddCharacter, setShowAddCharacter] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<any>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [viewingPose, setViewingPose] = useState<Pose | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -95,9 +100,18 @@ export default function Dashboard() {
     if (selectedFilter === characterId) setSelectedFilter(null);
   };
 
-  const filteredPoses = selectedFilter
-    ? poses.filter((p) => p.character_id === selectedFilter)
-    : poses;
+  const filteredPoses = poses.filter((p) => {
+    if (selectedFilter && p.character_id !== selectedFilter) return false;
+    if (selectedGenre && p.genre !== selectedGenre) return false;
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesName = p.name.toLowerCase().includes(query);
+      const matchesCharacter = p.characters?.name.toLowerCase().includes(query);
+      const matchesGenre = p.genre?.toLowerCase().includes(query);
+      if (!matchesName && !matchesCharacter && !matchesGenre) return false;
+    }
+    return true;
+  });
 
   const selectedCharacterName = selectedFilter
     ? characters.find((c) => c.id === selectedFilter)?.name || ""
@@ -258,19 +272,79 @@ export default function Dashboard() {
           </div>
         ) : (
           <>
+            {/* Search Bar */}
+            <div className="mb-6">
+              <div className="relative max-w-md">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search poses by name, character, or genre..."
+                  className="w-full pl-12 pr-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            {/* Genre Filter Buttons */}
+            <div className="flex flex-wrap gap-2 mb-6">
+              <button
+                onClick={() => setSelectedGenre(null)}
+                className={
+                  "px-4 py-2 rounded-lg text-sm font-medium transition " +
+                  (!selectedGenre
+                    ? "bg-blue-500 text-white"
+                    : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700")
+                }
+              >
+                All Genres
+              </button>
+              {[
+                "action",
+                "standing",
+                "running",
+                "combat",
+                "stealth",
+                "cinematic",
+              ].map((genre) => (
+                <button
+                  key={genre}
+                  onClick={() => setSelectedGenre(genre)}
+                  className={
+                    "px-4 py-2 rounded-lg text-sm font-medium transition capitalize " +
+                    (selectedGenre === genre
+                      ? "bg-blue-500 text-white"
+                      : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700")
+                  }
+                >
+                  {genre}
+                </button>
+              ))}
+            </div>
+
             {/* Filter indicator */}
             <div className="flex items-center justify-between mb-6">
               <p className="text-sm text-zinc-400">
-                {selectedFilter
-                  ? "Showing poses for: " + selectedCharacterName
-                  : "Showing all " + poses.length + " poses"}
+                {selectedFilter && selectedGenre
+                  ? "Showing " +
+                    selectedGenre +
+                    " poses for: " +
+                    selectedCharacterName
+                  : selectedFilter
+                    ? "Showing poses for: " + selectedCharacterName
+                    : selectedGenre
+                      ? "Showing all " + selectedGenre + " poses"
+                      : "Showing all " + filteredPoses.length + " poses"}
               </p>
-              {selectedFilter && (
+              {(selectedFilter || selectedGenre || searchQuery) && (
                 <button
-                  onClick={() => setSelectedFilter(null)}
+                  onClick={() => {
+                    setSelectedFilter(null);
+                    setSelectedGenre(null);
+                    setSearchQuery("");
+                  }}
                   className="text-xs text-blue-400 hover:text-blue-300 transition"
                 >
-                  Clear filter ✕
+                  Clear all filters ✕
                 </button>
               )}
             </div>
@@ -283,7 +357,10 @@ export default function Dashboard() {
                   className="group bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800 hover:border-blue-500 transition-all hover:shadow-lg hover:shadow-blue-500/20"
                 >
                   {/* Image */}
-                  <div className="aspect-[3/4] bg-zinc-800 relative overflow-hidden">
+                  <div
+                    onClick={() => setViewingPose(pose)}
+                    className="aspect-[3/4] bg-zinc-800 relative overflow-hidden cursor-pointer"
+                  >
                     <img
                       src={pose.image_url}
                       alt={pose.name}
@@ -369,6 +446,13 @@ export default function Dashboard() {
           loadData();
           setEditingCharacter(null);
         }}
+      />
+      <PoseDetailModal
+        isOpen={!!viewingPose}
+        pose={viewingPose}
+        onClose={() => setViewingPose(null)}
+        onDownload={handleDownload}
+        onDelete={handleDeletePose}
       />
     </div>
   );

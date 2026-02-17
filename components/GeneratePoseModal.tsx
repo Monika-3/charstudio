@@ -276,6 +276,11 @@ export default function GeneratePoseModal({
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Generating...
                 </>
+              ) : generatedImageUrl ? (
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  Regenerate Pose
+                </>
               ) : (
                 <>
                   <Sparkles className="w-5 h-5" />
@@ -283,6 +288,14 @@ export default function GeneratePoseModal({
                 </>
               )}
             </button>
+
+            {/* Not Satisfied Helper Text */}
+            {generatedImageUrl && !loading && (
+              <p className="text-xs text-zinc-400 text-center -mt-2">
+                💡 Not satisfied? Click Regenerate to try again with same
+                settings
+              </p>
+            )}
 
             {/* Progress Bar */}
             {loading && (
