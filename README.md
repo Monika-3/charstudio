@@ -57,6 +57,7 @@ Create a `.env.local` file:
 ## 🖥 Run Locally
 Open: `http://localhost:3000`
 
+---
 ## 📦 Future Improvements (In Progress)
 
 - Multiple pose variations per generation
@@ -66,6 +67,8 @@ Open: `http://localhost:3000`
 - Pose favorites
 - AI style presets
 - Usage quota system
+
+---
 
 ## 💡 Purpose
 
